@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel
 from typing import List, Dict
-from datetime import date, timedelta
+from datetime import datetime, timedelta
 
 app = FastAPI()
 
@@ -13,28 +13,30 @@ class Order(BaseModel):
     id: int
     items: List[OrderItem]
     total_amount: float = 0.0
+    deliveryDate: datetime
 
-    delivery_date: date
 orders: Dict[int, Order] = {}
-last_order_id = 0
+order_id_counter = 0  # глобальний лічильник ID
+
 @app.get("/orders", response_model=List[Order])
 def get_all_orders():
     return list(orders.values())
 
 @app.post("/orders", response_model=Order, status_code=status.HTTP_201_CREATED)
 def create_order(order_items: List[OrderItem]):
-    global last_order_id
-    last_order_id += 1
+    global order_id_counter
+    order_id_counter += 1
+    new_id = order_id_counter
 
-    expected_date = date.today() + timedelta(days=5)
+    delivery_date = datetime.now() + timedelta(days=5)
 
     new_order = Order(
-        id=last_order_id,
+        id=new_id,
         items=order_items,
-        delivery_date=expected_date
+        deliveryDate=delivery_date
     )
 
-    orders[last_order_id] = new_order
+    orders[new_id] = new_order
     return new_order
 
 @app.get("/orders/{order_id}", response_model=Order)
